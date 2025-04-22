@@ -1,0 +1,36 @@
+[project]
+name = "beta-context-saga"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "chromadb>=1.0.5",
+    "langchain-openai>=0.3.14",
+    "sentence-transformers>=4.1.0",
+    "token-count>=0.2.1",
+    "tqdm>=4.67.1",
+]
+
+[project.optional-dependencies]
+dev = ["flask>=3.1.0", "flask-cors>=5.0.1"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+select = [
+    "E",
+    "F",
+    "I",
+    "N",
+    "W",
+    "B",
+    "C4",
+    "UP",
+    "SIM",
+    "TID",
+    "E721",
+    "TID252",
+]
+
+fixable = ["ALL"]

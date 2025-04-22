@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6" x-data="settingsManager()">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Settings</h1>
+        <div class="flex space-x-2">
+            <button class="px-4 py-2 bg-primary text-primary-foreground rounded-md shadow hover:bg-primary/90"
+                @click="saveSettings">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Save Settings
+            </button>
+        </div>
+    </div>
+
+    <!-- Settings Form -->
+    <div class="bg-card border border-border rounded-lg shadow p-6">
+        <form @submit.prevent="saveSettings" class="space-y-4">
+            <!-- Database Paths Section -->
+            <div class="pb-4 mb-4 border-b border-border">
+                <h2 class="text-xl font-semibold mb-4">Database Paths</h2>
+
+                <!-- Memory Database Path -->
+                <div class="space-y-2 mb-4">
+                    <label for="memory_db_path" class="block text-sm font-medium">Memory Database Path</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="memory_db_path" x-model="settings.memory_db_path"
+                            class="w-full p-2 border border-input rounded-md bg-background">
+                        <button type="button" @click="selectPath('memory_db_path')"
+                            class="p-2 bg-secondary text-secondary-foreground rounded-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="text-xs text-muted-foreground">
+                        Path to the SQLite database file for memory storage
+                    </p>
+                </div>
+
+                <!-- Chroma Database Path -->
+                <div class="space-y-2">
+                    <label for="chroma_db_path" class="block text-sm font-medium">Chroma Database Path</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="chroma_db_path" x-model="settings.chroma_db_path"
+                            class="w-full p-2 border border-input rounded-md bg-background">
+                        <button type="button" @click="selectPath('chroma_db_path')"
+                            class="p-2 bg-secondary text-secondary-foreground rounded-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="text-xs text-muted-foreground">
+                        Directory for the Chroma vector database
+                    </p>
+                </div>
+            </div>
+
+            <!-- Server Settings Section -->
+            <div class="pb-4 mb-4 border-b border-border">
+                <h2 class="text-xl font-semibold mb-4">Server Settings</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Host -->
+                    <div class="space-y-2">
+                        <label for="host" class="block text-sm font-medium">Host</label>
+                        <input type="text" id="host" x-model="settings.host"
+                            class="w-full p-2 border border-input rounded-md bg-background">
+                        <p class="text-xs text-muted-foreground">
+                            Server host address (default: 0.0.0.0)
+                        </p>
+                    </div>
+
+                    <!-- Port -->
+                    <div class="space-y-2">
+                        <label for="port" class="block text-sm font-medium">Port</label>
+                        <input type="number" id="port" x-model.number="settings.port"
+                            class="w-full p-2 border border-input rounded-md bg-background">
+                        <p class="text-xs text-muted-foreground">
+                            Server port (default: 5000)
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Debug Mode -->
+                <div class="mt-4 flex items-center space-x-2">
+                    <input type="checkbox" id="debug" x-model="settings.debug" class="h-4 w-4 border-gray-300 rounded">
+                    <label for="debug" class="text-sm font-medium">Enable Debug Mode</label>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Notification -->
+    <div x-show="notification.show" x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100"
+        x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 transform scale-100"
+        x-transition:leave-end="opacity-0 transform scale-95"
+        class="fixed bottom-4 right-4 p-4 rounded-md shadow-lg max-w-md"
+        :class="notification.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'">
+        <div class="flex items-start">
+            <div class="flex-shrink-0" x-show="notification.type === 'success'">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <div class="flex-shrink-0" x-show="notification.type === 'error'">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm font-medium" x-text="notification.message"></p>
+            </div>
+            <div class="ml-auto pl-3">
+                <div class="-mx-1.5 -my-1.5">
+                    <button @click="notification.show = false" class="inline-flex text-white hover:text-gray-100">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function settingsManager() {
+        return {
+            settings: {
+                memory_db_path: "",
+                chroma_db_path: "",
+                host: "",
+                port: 5000,
+                debug: true
+            },
+            notification: {
+                show: false,
+                type: 'success',
+                message: ''
+            },
+
+            async init() {
+                await this.fetchSettings();
+            },
+
+            async fetchSettings() {
+                try {
+                    const response = await fetch('/api/settings');
+                    const data = await response.json();
+
+                    this.settings = {
+                        memory_db_path: data.memory_db_path || "",
+                        chroma_db_path: data.chroma_db_path || "",
+                        host: data.host || "0.0.0.0",
+                        port: parseInt(data.port) || 5000,
+                        debug: Boolean(data.debug)
+                    };
+                } catch (error) {
+                    console.error('Error fetching settings:', error);
+                    this.showNotification('error', 'Failed to load settings');
+                }
+            },
+
+            async saveSettings() {
+                try {
+                    const response = await fetch('/api/settings', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(this.settings)
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.showNotification('success', data.message || 'Settings saved successfully');
+                    } else {
+                        this.showNotification('error', data.error || 'Failed to save settings');
+                    }
+                } catch (error) {
+                    console.error('Error saving settings:', error);
+                    this.showNotification('error', 'Failed to save settings');
+                }
+            },
+
+            selectPath(fieldName) {
+                // Browser-based file/directory selection is limited
+                // This is a placeholder - in a real app, you might need a backend solution
+                // or electron API for proper file system access
+                alert('Please enter the path manually. File browsing is not supported in web applications for security reasons.');
+
+                // Focus the input field
+                document.getElementById(fieldName).focus();
+            },
+
+            showNotification(type, message) {
+                this.notification = {
+                    show: true,
+                    type: type,
+                    message: message
+                };
+
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    this.notification.show = false;
+                }, 5000);
+            }
+        };
+    }
+</script>
+{% endblock %}

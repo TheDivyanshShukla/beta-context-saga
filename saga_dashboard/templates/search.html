@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6" x-data="searchManager()">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Search</h1>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="bg-card border border-border rounded-lg shadow p-6">
+        <div class="flex flex-col space-y-4">
+            <div>
+                <label for="search-query" class="block text-sm font-medium text-muted-foreground mb-2">Search
+                    Query</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-muted-foreground" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input type="text" id="search-query"
+                        class="block w-full pl-10 pr-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="Enter search terms..." x-model="searchQuery" @keydown.enter="performSearch">
+                </div>
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <label for="result-limit" class="text-sm text-muted-foreground">Results limit:</label>
+                    <select id="result-limit"
+                        class="px-3 py-1 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        x-model="resultLimit">
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+                <button class="px-4 py-2 bg-primary text-primary-foreground rounded-md shadow hover:bg-primary/90"
+                    @click="performSearch">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Search
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div x-show="isLoading" class="flex justify-center p-8">
+        <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+    </div>
+
+    <!-- Search Results -->
+    <div x-show="searchResults.length > 0 && !isLoading" class="bg-card border border-border rounded-lg shadow">
+        <div class="p-6 border-b border-border">
+            <h3 class="text-lg font-medium">Search Results</h3>
+            <p class="text-sm text-muted-foreground mt-1"
+                x-text="`Found ${searchResults.length} results matching '${lastSearchQuery}'`"></p>
+        </div>
+        <div class="divide-y divide-border">
+            <template x-for="(result, index) in searchResults" :key="result.id">
+                <div class="p-6 hover:bg-muted/50">
+                    <div class="flex justify-between">
+                        <div class="flex-1 mr-4">
+                            <div class="flex items-center space-x-2">
+                                <h4 class="text-md font-medium" x-text="`Memory #${result.id}`"></h4>
+                                <span class="px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary"
+                                    x-text="`Score: ${(result.score * 100).toFixed(1)}%`"></span>
+                            </div>
+                            <p class="mt-2" x-text="result.content"></p>
+                            <div class="flex flex-wrap gap-1 mt-3">
+                                <template x-for="tag in result.tags" :key="tag">
+                                    <span class="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary"
+                                        x-text="tag"></span>
+                                </template>
+                            </div>
+                            <div class="flex items-center text-sm text-muted-foreground mt-3">
+                                <span class="mr-3" x-text="`Source: ${result.source}`"></span>
+                                <span x-text="`Created: ${formatDate(result.created_at)}`"></span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col space-y-2">
+                            <button class="p-1 text-primary hover:text-primary/80" @click="viewMemory(result.id)">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- No Results State -->
+    <div x-show="searchPerformed && searchResults.length === 0 && !isLoading"
+        class="bg-card border border-border rounded-lg shadow p-8 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-muted-foreground" fill="none"
+            viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="text-lg font-medium mt-4">No results found</h3>
+        <p class="text-muted-foreground mt-2">Try different search terms or check your spelling</p>
+    </div>
+
+    <!-- Memory View Modal -->
+    <div x-show="showMemoryModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" x-transition
+        @click.self="showMemoryModal = false">
+        <div class="bg-card border border-border rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            @click.outside="showMemoryModal = false">
+            <div class="p-6 border-b border-border flex justify-between items-center">
+                <h3 class="text-lg font-medium">Memory Details</h3>
+                <button @click="showMemoryModal = false" class="p-1 rounded-md hover:bg-muted">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <h4 class="text-sm font-medium text-muted-foreground">Content</h4>
+                    <p class="mt-1" x-text="currentMemory.content"></p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="text-sm font-medium text-muted-foreground">Tags</h4>
+                        <div class="flex flex-wrap gap-1 mt-1">
+                            <template x-for="tag in currentMemory.tags" :key="tag">
+                                <span class="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary"
+                                    x-text="tag"></span>
+                            </template>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-muted-foreground">Source</h4>
+                        <p class="mt-1" x-text="currentMemory.source"></p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-muted-foreground">Created At</h4>
+                        <p class="mt-1" x-text="formatDateLong(currentMemory.created_at)"></p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-muted-foreground">Importance</h4>
+                        <p class="mt-1" x-text="currentMemory.importance"></p>
+                    </div>
+                </div>
+                <div x-show="currentMemory.metadata">
+                    <h4 class="text-sm font-medium text-muted-foreground">Metadata</h4>
+                    <pre class="mt-1 p-2 bg-muted/50 rounded-md overflow-x-auto text-xs"
+                        x-text="JSON.stringify(currentMemory.metadata, null, 2)"></pre>
+                </div>
+                <div x-show="currentMemory.expires_in">
+                    <h4 class="text-sm font-medium text-muted-foreground">Expires In</h4>
+                    <p class="mt-1" x-text="currentMemory.expires_in"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Search Page -->
+<script>
+    function searchManager() {
+        return {
+            searchQuery: '',
+            lastSearchQuery: '',
+            searchResults: [],
+            currentMemory: {},
+            showMemoryModal: false,
+            isLoading: false,
+            searchPerformed: false,
+            resultLimit: 10,
+
+            async performSearch() {
+                if (!this.searchQuery.trim()) return;
+
+                this.isLoading = true;
+                this.searchPerformed = true;
+                this.lastSearchQuery = this.searchQuery;
+
+                try {
+                    const response = await fetch(`/api/search?q=${encodeURIComponent(this.searchQuery)}&limit=${this.resultLimit}`);
+                    if (response.ok) {
+                        this.searchResults = await response.json();
+                    } else {
+                        console.error('Search request failed');
+                        this.searchResults = [];
+                    }
+                } catch (error) {
+                    console.error('Error performing search:', error);
+                    this.searchResults = [];
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+
+            async viewMemory(id) {
+                try {
+                    const response = await fetch(`/api/memory/${id}`);
+                    if (response.ok) {
+                        this.currentMemory = await response.json();
+                        this.showMemoryModal = true;
+                    }
+                } catch (error) {
+                    console.error('Error loading memory details:', error);
+                }
+            },
+
+            formatDate(dateString) {
+                return new Date(dateString).toLocaleDateString();
+            },
+
+            formatDateLong(dateString) {
+                return new Date(dateString).toLocaleString();
+            }
+        };
+    }
+</script>
+{% endblock %}

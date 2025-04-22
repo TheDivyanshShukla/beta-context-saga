@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6" x-data="analyticsManager()">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Analytics</h1>
+        <div class="flex space-x-2">
+            <button class="px-4 py-2 bg-primary text-primary-foreground rounded-md shadow hover:bg-primary/90"
+                @click="refreshData">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-card border border-border rounded-lg shadow p-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-muted-foreground">Total Memories</p>
+                    <h3 class="text-3xl font-bold mt-2" x-text="analytics.total_memories || 0"></h3>
+                </div>
+                <div class="p-2 bg-primary/10 rounded-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-card border border-border rounded-lg shadow p-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-muted-foreground">Memories Last Day</p>
+                    <h3 class="text-3xl font-bold mt-2" x-text="analytics.age_distribution?.last_day || 0"></h3>
+                </div>
+                <div class="p-2 bg-primary/10 rounded-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-card border border-border rounded-lg shadow p-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-muted-foreground">Total Sources</p>
+                    <h3 class="text-3xl font-bold mt-2" x-text="Object.keys(analytics.sources || {}).length"></h3>
+                </div>
+                <div class="p-2 bg-primary/10 rounded-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-card border border-border rounded-lg shadow p-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-muted-foreground">Total Tags</p>
+                    <h3 class="text-3xl font-bold mt-2" x-text="analytics.top_tags?.length || 0"></h3>
+                </div>
+                <div class="p-2 bg-primary/10 rounded-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Age Distribution -->
+        <div class="bg-card border border-border rounded-lg shadow p-6">
+            <h3 class="text-lg font-medium">Memory Age Distribution</h3>
+            <div class="h-80 mt-4">
+                <canvas id="ageChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Sources Distribution -->
+        <div class="bg-card border border-border rounded-lg shadow p-6">
+            <h3 class="text-lg font-medium">Memory Sources</h3>
+            <div class="h-80 mt-4">
+                <canvas id="sourcesChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Tags -->
+    <div class="bg-card border border-border rounded-lg shadow">
+        <div class="p-6 border-b border-border">
+            <h3 class="text-lg font-medium">Top Tags</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th class="px-6 py-3">Tag</th>
+                        <th class="px-6 py-3">Count</th>
+                        <th class="px-6 py-3">Percentage</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    <template x-for="tag in analytics.top_tags" :key="tag.name">
+                        <tr class="hover:bg-muted/50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" x-text="tag.name"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" x-text="tag.count"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <div class="flex items-center">
+                                    <div class="w-full bg-muted rounded-full h-2.5 mr-2">
+                                        <div class="bg-primary h-2.5 rounded-full"
+                                            :style="`width: ${(tag.count / analytics.total_memories * 100).toFixed(1)}%`">
+                                        </div>
+                                    </div>
+                                    <span x-text="`${(tag.count / analytics.total_memories * 100).toFixed(1)}%`"></span>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Analytics Page -->
+<script>
+    function analyticsManager() {
+        return {
+            analytics: {},
+            ageChart: null,
+            sourcesChart: null,
+
+            init() {
+                this.loadAnalytics();
+            },
+
+            async loadAnalytics() {
+                try {
+                    const response = await fetch('/api/analytics');
+                    if (response.ok) {
+                        this.analytics = await response.json();
+                        this.$nextTick(() => {
+                            this.renderCharts();
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error loading analytics:', error);
+                }
+            },
+
+            refreshData() {
+                this.loadAnalytics();
+            },
+
+            renderCharts() {
+                this.renderAgeDistributionChart();
+                this.renderSourcesChart();
+            },
+
+            renderAgeDistributionChart() {
+                const ctx = document.getElementById('ageChart').getContext('2d');
+
+                // Destroy previous chart if it exists
+                if (this.ageChart) {
+                    this.ageChart.destroy();
+                }
+
+                const ageDistribution = this.analytics.age_distribution || {
+                    last_day: 0,
+                    last_week: 0,
+                    last_month: 0,
+                    older: 0
+                };
+
+                const isDarkMode = document.documentElement.classList.contains('dark');
+                const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+
+                this.ageChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Last 24 Hours', 'Last Week', 'Last Month', 'Older'],
+                        datasets: [{
+                            label: 'Memory Age',
+                            data: [
+                                ageDistribution.last_day,
+                                ageDistribution.last_week,
+                                ageDistribution.last_month,
+                                ageDistribution.older
+                            ],
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.8)',  // Blue
+                                'rgba(16, 185, 129, 0.8)',  // Green
+                                'rgba(245, 158, 11, 0.8)',  // Amber
+                                'rgba(239, 68, 68, 0.8)'    // Red
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: textColor
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+
+            renderSourcesChart() {
+                const ctx = document.getElementById('sourcesChart').getContext('2d');
+
+                // Destroy previous chart if it exists
+                if (this.sourcesChart) {
+                    this.sourcesChart.destroy();
+                }
+
+                const sources = this.analytics.sources || {};
+                const labels = Object.keys(sources);
+                const data = Object.values(sources);
+
+                const isDarkMode = document.documentElement.classList.contains('dark');
+                const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+
+                // Generate colors
+                const colors = [];
+                for (let i = 0; i < labels.length; i++) {
+                    const hue = (i * 137.5) % 360; // Use golden angle approximation for color distribution
+                    colors.push(`hsla(${hue}, 70%, 60%, 0.8)`);
+                }
+
+                this.sourcesChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Sources',
+                            data: data,
+                            backgroundColor: colors,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: textColor
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        };
+    }
+
+    // Listen for theme changes to update charts
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+        setTimeout(() => {
+            if (window.Alpine) {
+                const analyticsComponent = Alpine.evaluate(document.querySelector('[x-data="analyticsManager()"]'), 'this');
+                if (analyticsComponent && analyticsComponent.renderCharts) {
+                    analyticsComponent.renderCharts();
+                }
+            }
+        }, 100);
+    });
+</script>
+{% endblock %}

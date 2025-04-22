@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6" x-data="tagsManager()">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Tags</h1>
+        <div class="flex space-x-2">
+            <button class="px-4 py-2 bg-primary text-primary-foreground rounded-md shadow hover:bg-primary/90"
+                @click="refreshData">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Tags Cloud -->
+    <div class="bg-card border border-border rounded-lg shadow p-6">
+        <h3 class="text-lg font-medium mb-4">Tags Cloud</h3>
+        <div class="flex flex-wrap gap-2">
+            <template x-for="tag in tags" :key="tag.name">
+                <div class="px-3 py-2 rounded-full text-sm flex items-center justify-between"
+                    :class="getTagColorClass(tag.count)" @click="selectTag(tag.name)">
+                    <span x-text="tag.name"></span>
+                    <span class="ml-2 px-1.5 py-0.5 bg-white/20 rounded-full text-xs" x-text="tag.count"></span>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="bg-card border border-border rounded-lg shadow p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="col-span-1 md:col-span-3">
+                <label for="tag-search" class="block text-sm font-medium text-muted-foreground mb-2">Search Tags</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-muted-foreground" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input type="text" id="tag-search"
+                        class="block w-full pl-10 pr-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="Search tags..." x-model="searchQuery" @input="filterTags">
+                </div>
+            </div>
+            <div>
+                <label for="sort-by" class="block text-sm font-medium text-muted-foreground mb-2">Sort By</label>
+                <select id="sort-by"
+                    class="block w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    x-model="sortBy" @change="sortTags">
+                    <option value="name">Name</option>
+                    <option value="count">Count</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tag List -->
+    <div class="bg-card border border-border rounded-lg shadow">
+        <div class="p-6 border-b border-border">
+            <h3 class="text-lg font-medium">All Tags</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th class="px-6 py-3">Tag</th>
+                        <th class="px-6 py-3">Memory Count</th>
+                        <th class="px-6 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    <template x-for="tag in filteredTags" :key="tag.name">
+                        <tr class="hover:bg-muted/50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" x-text="tag.name"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" x-text="tag.count"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <div class="flex space-x-2">
+                                    <button class="p-1 text-primary hover:text-primary/80"
+                                        @click="viewMemoriesWithTag(tag.name)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Selected Tag Memories -->
+    <div x-show="selectedTag" class="bg-card border border-border rounded-lg shadow">
+        <div class="p-6 border-b border-border flex justify-between items-center">
+            <h3 class="text-lg font-medium">
+                <span>Memories with tag: </span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm bg-primary/10 text-primary"
+                    x-text="selectedTag"></span>
+            </h3>
+            <button class="p-1 rounded-md hover:bg-muted" @click="selectedTag = null; selectedTagMemories = []">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th class="px-6 py-3">Content</th>
+                        <th class="px-6 py-3">Tags</th>
+                        <th class="px-6 py-3">Importance</th>
+                        <th class="px-6 py-3">Created</th>
+                        <th class="px-6 py-3">Source</th>
+                        <th class="px-6 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    <template x-for="memory in selectedTagMemories" :key="memory.id">
+                        <tr class="hover:bg-muted/50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" x-text="truncateText(memory.content, 50)">
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <div class="flex flex-wrap gap-1">
+                                    <template x-for="tag in memory.tags" :key="tag">
+                                        <span class="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary"
+                                            :class="{'bg-primary text-primary-foreground': tag === selectedTag}"
+                                            x-text="tag"></span>
+                                    </template>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" x-text="memory.importance"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" x-text="formatDate(memory.created_at)"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" x-text="memory.source"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <div class="flex space-x-2">
+                                    <button class="p-1 text-primary hover:text-primary/80"
+                                        @click="viewMemory(memory.id)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Memory View Modal -->
+    <div x-show="showMemoryModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" x-transition
+        @click.self="showMemoryModal = false">
+        <div class="bg-card border border-border rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            @click.outside="showMemoryModal = false">
+            <div class="p-6 border-b border-border flex justify-between items-center">
+                <h3 class="text-lg font-medium">Memory Details</h3>
+                <button @click="showMemoryModal = false" class="p-1 rounded-md hover:bg-muted">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <h4 class="text-sm font-medium text-muted-foreground">Content</h4>
+                    <p class="mt-1" x-text="currentMemory.content"></p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="text-sm font-medium text-muted-foreground">Tags</h4>
+                        <div class="flex flex-wrap gap-1 mt-1">
+                            <template x-for="tag in currentMemory.tags" :key="tag">
+                                <span class="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary"
+                                    :class="{'bg-primary text-primary-foreground': tag === selectedTag}"
+                                    x-text="tag"></span>
+                            </template>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-muted-foreground">Importance</h4>
+                        <p class="mt-1" x-text="currentMemory.importance"></p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-muted-foreground">Created At</h4>
+                        <p class="mt-1" x-text="formatDate(currentMemory.created_at, true)"></p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-muted-foreground">Source</h4>
+                        <p class="mt-1" x-text="currentMemory.source"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function tagsManager() {
+        return {
+            tags: [],
+            filteredTags: [],
+            searchQuery: '',
+            sortBy: 'count',
+            selectedTag: null,
+            selectedTagMemories: [],
+            showMemoryModal: false,
+            currentMemory: {},
+
+            async init() {
+                await this.fetchTags();
+            },
+
+            async fetchTags() {
+                try {
+                    const response = await fetch('/api/tags');
+                    this.tags = await response.json();
+                    this.sortTags();
+                    this.filterTags();
+                } catch (error) {
+                    console.error('Error fetching tags:', error);
+                }
+            },
+
+            sortTags() {
+                if (this.sortBy === 'name') {
+                    this.tags.sort((a, b) => a.name.localeCompare(b.name));
+                } else {
+                    this.tags.sort((a, b) => b.count - a.count);
+                }
+                this.filterTags();
+            },
+
+            filterTags() {
+                if (!this.searchQuery) {
+                    this.filteredTags = [...this.tags];
+                    return;
+                }
+
+                const query = this.searchQuery.toLowerCase();
+                this.filteredTags = this.tags.filter(tag =>
+                    tag.name.toLowerCase().includes(query)
+                );
+            },
+
+            refreshData() {
+                this.fetchTags();
+                if (this.selectedTag) {
+                    this.viewMemoriesWithTag(this.selectedTag);
+                }
+            },
+
+            getTagColorClass(count) {
+                // Find maximum count for scaling
+                const maxCount = Math.max(...this.tags.map(t => t.count));
+
+                // Calculate intensity based on count
+                const intensity = maxCount > 0 ? (count / maxCount) : 0;
+
+                if (intensity > 0.8) {
+                    return 'bg-primary text-primary-foreground cursor-pointer';
+                } else if (intensity > 0.6) {
+                    return 'bg-primary/80 text-primary-foreground cursor-pointer';
+                } else if (intensity > 0.4) {
+                    return 'bg-primary/60 text-primary-foreground cursor-pointer';
+                } else if (intensity > 0.2) {
+                    return 'bg-primary/40 text-primary-foreground cursor-pointer';
+                } else {
+                    return 'bg-primary/20 text-primary cursor-pointer';
+                }
+            },
+
+            async selectTag(tagName) {
+                this.selectedTag = tagName;
+                await this.viewMemoriesWithTag(tagName);
+            },
+
+            async viewMemoriesWithTag(tagName) {
+                try {
+                    // This is a simulation since we don't have a specific endpoint for this
+                    // In a real app, you'd have an endpoint like /api/memories?tag=tagName
+                    const response = await fetch('/api/memories?limit=100');
+                    const memories = await response.json();
+
+                    // Filter memories that have the selected tag
+                    this.selectedTagMemories = memories.filter(memory =>
+                        memory.tags && memory.tags.includes(tagName)
+                    );
+                } catch (error) {
+                    console.error('Error fetching memories for tag:', error);
+                }
+            },
+
+            async viewMemory(id) {
+                try {
+                    const response = await fetch(`/api/memory/${id}`);
+                    this.currentMemory = await response.json();
+                    this.showMemoryModal = true;
+                } catch (error) {
+                    console.error('Error fetching memory:', error);
+                }
+            },
+
+            truncateText(text, length) {
+                if (!text) return '';
+                return text.length > length ? text.substring(0, length) + '...' : text;
+            },
+
+            formatDate(dateString, includeTime = false) {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                if (includeTime) {
+                    return date.toLocaleString();
+                }
+                return date.toLocaleDateString();
+            }
+        };
+    }
+</script>
+{% endblock %}
