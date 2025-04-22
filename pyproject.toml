@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "beta-context-saga"
 version = "0.1.0"
@@ -14,6 +18,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["flask>=3.1.0", "flask-cors>=5.0.1"]
+
+[tool.setuptools]
+packages = ["beta_context_saga", "saga_dashboard"]
 
 [tool.ruff]
 line-length = 100
