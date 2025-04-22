@@ -3,7 +3,7 @@
 An AI-powered memory management system that processes content through semantic search and uses LLMs for CRUD operations on a knowledge database.
 
 
-![Image](docs\asset\image.png)
+![Image](./docs/asset/image.png)
 
 ## Features
 
